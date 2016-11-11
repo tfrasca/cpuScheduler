@@ -106,12 +106,16 @@ void FCFS_loop(struct Process *ps, int num_ps) {
 	}
 
 	for (time = 0; 1; time++) {
+		// add process to ready queue
 		while (cur_process < num_ps && ps[cur_process].arrival_time == time) {
 			ready_queue[num_ready++] = &ps[cur_process++];
 		}
 
+		// if no process running, take first process from ready queue
 		if (!p) {
 			p = ready_queue[cur_running];
+
+			//if ready queue is empty, CPU is idle
 			if (!p) {
 				printf("<time %d> CPU is idle\n", time);
 				continue;
@@ -121,18 +125,23 @@ void FCFS_loop(struct Process *ps, int num_ps) {
 		p->runtime++;
 		CPU_time++;
 
-		if (p->runtime == p->service_time) {
+		if (p->runtime < p->service_time) {
+			printf("<time %d> process %d is running\n", time, ready_queue[cur_running]->pid);
+		} 
+
+		// if process is done running, update TAT and nTAT
+		else {
 			printf("<time %d> process %d is finished!\n", time, p->pid);
 			sum_TAT += (time - p->arrival_time + 1.0);
 			sum_nTAT += (time - p->arrival_time + 1.0) / p->service_time;
 
 			p = NULL;
 			cur_running++;
+
+			//if we've finished running all processes
 			if (cur_running == num_ps) {
 				break;
 			}
-		} else {
-			printf("<time %d> process %d is running\n", time, ready_queue[cur_running]->pid);
 		}
 	}
 
