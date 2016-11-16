@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
 	for (i=0; i < num_p; i++) {
 		pid = array[i];
 		arrival_time = rand() % 50;
-		service_time = rand() % 20;
+		service_time = (rand() % 20) + 1;
 		priority = (rand() % 40) - 20;
 
 		fprintf(fp, "%d %d %d %d\n", pid, arrival_time, service_time, priority);

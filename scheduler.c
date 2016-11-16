@@ -38,7 +38,6 @@ int main (int argc, char *argv[]) {
 int get_num_processes(FILE *fp) {
 	int num_ps = 0;
 	char *line = NULL;
-    char *word;
     size_t len = 0;
     ssize_t line_len = 0;
 
@@ -90,25 +89,22 @@ int sort_arrival (const void * a, const void * b) {
 }
 
 void FCFS_loop(struct Process *ps, int num_ps) {
-	int cur_process = 0;
-	int cur_running = 0;
-	int num_ready = 0;
-	int time;
+	int cur_running = 0, num_ready = 0;
 	struct Process *ready_queue[num_ps];
 	struct Process *p = NULL;
-	float CPU_time = 0.0;
-	float sum_TAT = 0.0;
-	float sum_nTAT = 0.0;
-	int i;
+	float CPU_time = 0.0, sum_TAT = 0.0, sum_nTAT = 0.0;
+	int time, i;
 
 	for (i = 0; i < num_ps; i++) {
 		ready_queue[i] = NULL;
 	}
 
-	for (time = 0; 1; time++) {
+	// keep running until we've run all processes
+	for (time = 0; cur_running < num_ps; time++) {
 		// add process to ready queue
-		while (cur_process < num_ps && ps[cur_process].arrival_time == time) {
-			ready_queue[num_ready++] = &ps[cur_process++];
+		while (num_ready < num_ps && ps[num_ready].arrival_time == time) {
+			ready_queue[num_ready] = &ps[num_ready];
+			num_ready++;
 		}
 
 		// if no process running, take first process from ready queue
@@ -137,11 +133,6 @@ void FCFS_loop(struct Process *ps, int num_ps) {
 
 			p = NULL;
 			cur_running++;
-
-			//if we've finished running all processes
-			if (cur_running == num_ps) {
-				break;
-			}
 		}
 	}
 
@@ -154,6 +145,11 @@ void FCFS_loop(struct Process *ps, int num_ps) {
 
 
 void CFS_loop(struct Process *ps, int num_ps) {
+
+	int i;
+
+
+
 	return;
 }
 
