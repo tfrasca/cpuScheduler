@@ -149,62 +149,80 @@ void FCFS_loop(struct Process *ps, int num_ps) {
 //TODO: fix makefile for red black tree
 void CFS_loop(struct Process *ps, int num_ps) {
 	rb_red_blk_tree *ready_queue = RBTreeCreate(*compare_vruntime,
-			     NULL,
-			     NULL,
+			     dest_node,
+			     dest_node,
 			     NULL,
 			     NULL);
 
-	int num_ready = 0;
-	struct Process *p = NULL;
+	int num_ready = 0, num_finished = 0;
+	struct Process *p;
 	int ready_weights = 0;
 	int weight, p_time, timeslice, vruntime;
+	int *vrp = NULL;
 	float CPU_time = 0.0, sum_TAT = 0.0, sum_nTAT = 0.0;
 	int time;
+	bool isRunning = false;
 
-	for (time = 0; ; time++) {
+	for (time = 0; num_finished < num_ps; time++) {
 		// add process to ready queue
+		// printf("TIME %d\n", time);
 		while (num_ready < num_ps && ps[num_ready].arrival_time == time) {
-			RBTreeInsert(ready_queue, (void*)0, (void*)&ps[num_ready]);
+			// printf("%d arrived\n", ps[num_ready].pid);
+			vruntime = 0;
+		    vrp=(int*) malloc(sizeof(int));
+		    *vrp=vruntime;
+			RBTreeInsert(ready_queue, vrp, &ps[num_ready]);
+			ready_weights += prio_to_weight[ps[num_ready].priority + 20];
 			num_ready++;
-			ready_weights += weight;
 		}
 
 		// if no process running, take first process from ready queue
-		if (!p) {
-			if (ready_queue->root == NULL) {
+		if (!isRunning) {
+			if (ready_queue->root->left == ready_queue->nil) {
 				printf("<time %d> CPU is idle\n", time);
 				continue;
 			} 
 
 			// pop leftmost node in ready_queue
+			// pointer to processes getting overwritten
+			p = malloc(sizeof(struct Process));
 			p = get_next_process(ready_queue);
-			printf("%d\n", p->pid);
+			isRunning = true;
 			p_time = 0;
-			weight = prio_to_weight[p->priority + 20];
+			weight = prio_to_weight[p.priority + 20];
 			timeslice = (TARGET_LATENCY * weight) / ready_weights;
-			printf("%d", p->pid);
+			printf("pid %d\n", p.pid);
+			printf("weight %d ready weight %d\n", weight, ready_weights);
+			printf("timeslice %d\n", timeslice);
 		}
 
-		p->runtime++;
+		p.runtime++;
 		p_time++;
 		CPU_time++;
 
-		if (p->runtime == p->service_time) {
-			printf("<time %d> process %d is finished!\n", time, p->pid);
-			sum_TAT += (time - p->arrival_time + 1.0);
-			sum_nTAT += (time - p->arrival_time + 1.0) / p->service_time;
+		if (p.runtime == p.service_time) {
+			printf("<time %d> process %d is finished!\n", time, p.pid);
+			sum_TAT += (time - p.arrival_time + 1.0);
+			sum_nTAT += (time - p.arrival_time + 1.0) / p.service_time;
 			ready_weights -= weight;
+			num_finished++;
+			printf("finished:%d\n", num_finished);
 
-			p = NULL;
+			isRunning = false;
 		}
 		else {
-			printf("<time %d> process %d is running\n", time, p->pid);
+			printf("<time %d> process %d is running\n", time, p.pid);
 			if (p_time == timeslice) {
 				//update virtual runtime
-				vruntime = p->runtime * (prio_to_weight[20] / weight);
+				vruntime = p.runtime * (prio_to_weight[20] / weight);
+				printf("%d vrtime %d\n", p.pid, vruntime);
+			    vrp=(int*) malloc(sizeof(int));
+			    *vrp=vruntime;
 				//insert to rb tree
-				RBTreeInsert(ready_queue, (void*)vruntime, (void*)&p);
-				p = NULL;
+				pp = malloc(sizeof(struct Process));
+				pp = p;
+				RBTreeInsert(ready_queue, vrp, &pp);
+				isRunning = false;
 			}
 		}
 	}
@@ -227,18 +245,20 @@ int compare_vruntime(const void *a, const void *b) {
    	}
 }
 
-struct Process *get_next_process(rb_red_blk_tree *q) {
-	rb_red_blk_node* n = q->root;
-	struct Process *p = NULL;
+void dest_node(void* a) {
+	;
+}
 
-	while (n->left->key != NULL) {
-		printf("%d\n", (int)n->key);
+struct Process get_next_process(rb_red_blk_tree *q) {
+	rb_red_blk_node* n = q->root->left;
+	struct Process p;
+
+	while (n->left != q->nil) {
 		n = n->left;
 	}	
 
-	p = (struct Process *)n->info;
+	p = *(struct Process *)n->info;
 	RBDelete(q, n);
-	printf("%d\n", p->pid);
 	return p;
 }
 

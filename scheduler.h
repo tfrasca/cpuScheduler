@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 // Taken from http://web.mit.edu/~emin/Desktop/ref_to_emin/www.old/source_code/red_black_tree/index.html
 #include "rb_tree/red_black_tree.h"
 
-#define TARGET_LATENCY 1000
+#define TARGET_LATENCY 5
 
 static const int prio_to_weight[40] = {
  /* -20 */     88761,     71755,     56483,     46273,     36291,
@@ -38,4 +39,5 @@ void FCFS_loop(struct Process *ps, int num_ps);
 //CFS loop
 void CFS_loop(struct Process *ps, int num_ps);
 int compare_vruntime(const void *a, const void *b);
-struct Process *get_next_process(rb_red_blk_tree *q);
+void dest_node(void* a);
+struct Process get_next_process(rb_red_blk_tree *q);
