@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <math.h>
 
 // Taken from http://web.mit.edu/~emin/Desktop/ref_to_emin/www.old/source_code/red_black_tree/index.html
 #include "rb_tree/red_black_tree.h"
@@ -40,4 +41,4 @@ void FCFS_loop(struct Process *ps, int num_ps);
 void CFS_loop(struct Process *ps, int num_ps);
 int compare_vruntime(const void *a, const void *b);
 void dest_node(void* a);
-struct Process get_next_process(rb_red_blk_tree *q);
+struct Process *get_next_process(rb_red_blk_tree *q);

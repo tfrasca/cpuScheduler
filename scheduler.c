@@ -63,15 +63,22 @@ struct Process *get_processes(FILE *fp, int num_ps, char *mode) {
 	struct Process *ps;
     int num_match = 0;
     int i;
+    int j;
 
     ps = malloc(sizeof(struct Process) * num_ps);
 
     for (i=0; i < num_ps; i++) {
 	    num_match = fscanf(fp, "%d %d %d %d\n", &ps[i].pid, &ps[i].arrival_time, &ps[i].service_time, &ps[i].priority);
-	    if (num_match != 4) {
+	    if (num_match != 4 || ps[i].pid<0 || ps[i].arrival_time<0 || ps[i].service_time<=0 || ps[i].priority > 19 || ps[i].priority <-20) {
 	        fprintf(stderr, "Error: Invalid input file format.\n");
 	        exit(1);
 	    }
+      for (j=0; j<i;j++) {
+        if (ps[i].pid == ps[j].pid) {
+	        fprintf(stderr, "Error: Invalid input file format.\n");
+	        exit(1);
+        }
+      }
 	    ps[i].runtime = 0;
     }
 
@@ -157,8 +164,9 @@ void CFS_loop(struct Process *ps, int num_ps) {
 	int num_ready = 0, num_finished = 0;
 	struct Process *p;
 	int ready_weights = 0;
-	int weight, p_time, timeslice, vruntime;
-	int *vrp = NULL;
+	int weight, p_time, timeslice;
+  float vruntime;
+	float *vrp = NULL;
 	float CPU_time = 0.0, sum_TAT = 0.0, sum_nTAT = 0.0;
 	int time;
 	bool isRunning = false;
@@ -169,9 +177,10 @@ void CFS_loop(struct Process *ps, int num_ps) {
 		while (num_ready < num_ps && ps[num_ready].arrival_time == time) {
 			// printf("%d arrived\n", ps[num_ready].pid);
 			vruntime = 0;
-		    vrp=(int*) malloc(sizeof(int));
+		    vrp=(float*) malloc(sizeof(float));
 		    *vrp=vruntime;
 			RBTreeInsert(ready_queue, vrp, &ps[num_ready]);
+      printf("ready weight %d\n",ready_weights);
 			ready_weights += prio_to_weight[ps[num_ready].priority + 20];
 			num_ready++;
 		}
@@ -185,25 +194,27 @@ void CFS_loop(struct Process *ps, int num_ps) {
 
 			// pop leftmost node in ready_queue
 			// pointer to processes getting overwritten
-			p = malloc(sizeof(struct Process));
 			p = get_next_process(ready_queue);
 			isRunning = true;
 			p_time = 0;
-			weight = prio_to_weight[p.priority + 20];
+			weight = prio_to_weight[p->priority + 20];
 			timeslice = (TARGET_LATENCY * weight) / ready_weights;
-			printf("pid %d\n", p.pid);
+      if (timeslice==0) {
+        timeslice++;
+      }
+			printf("pid %d\n", p->pid);
 			printf("weight %d ready weight %d\n", weight, ready_weights);
 			printf("timeslice %d\n", timeslice);
 		}
 
-		p.runtime++;
+		p->runtime++;
 		p_time++;
 		CPU_time++;
 
-		if (p.runtime == p.service_time) {
-			printf("<time %d> process %d is finished!\n", time, p.pid);
-			sum_TAT += (time - p.arrival_time + 1.0);
-			sum_nTAT += (time - p.arrival_time + 1.0) / p.service_time;
+		if (p->runtime == p->service_time) {
+			printf("<time %d> process %d is finished!\n", time, p->pid);
+			sum_TAT += (time - p->arrival_time + 1.0);
+			sum_nTAT += (time - p->arrival_time + 1.0) / p->service_time;
 			ready_weights -= weight;
 			num_finished++;
 			printf("finished:%d\n", num_finished);
@@ -211,17 +222,15 @@ void CFS_loop(struct Process *ps, int num_ps) {
 			isRunning = false;
 		}
 		else {
-			printf("<time %d> process %d is running\n", time, p.pid);
+			printf("<time %d> process %d is running\n", time, p->pid);
 			if (p_time == timeslice) {
 				//update virtual runtime
-				vruntime = p.runtime * (prio_to_weight[20] / weight);
-				printf("%d vrtime %d\n", p.pid, vruntime);
-			    vrp=(int*) malloc(sizeof(int));
+				vruntime = p->runtime * (prio_to_weight[20] / (float)weight);
+				printf("%d vrtime %f\n", p->pid, vruntime);
+			    vrp=(float*) malloc(sizeof(float));
 			    *vrp=vruntime;
 				//insert to rb tree
-				pp = malloc(sizeof(struct Process));
-				pp = p;
-				RBTreeInsert(ready_queue, vrp, &pp);
+				RBTreeInsert(ready_queue, vrp, p);
 				isRunning = false;
 			}
 		}
@@ -249,15 +258,15 @@ void dest_node(void* a) {
 	;
 }
 
-struct Process get_next_process(rb_red_blk_tree *q) {
+struct Process *get_next_process(rb_red_blk_tree *q) {
 	rb_red_blk_node* n = q->root->left;
-	struct Process p;
+	struct Process *p;
 
 	while (n->left != q->nil) {
 		n = n->left;
 	}	
 
-	p = *(struct Process *)n->info;
+	p = (struct Process *)n->info;
 	RBDelete(q, n);
 	return p;
 }
