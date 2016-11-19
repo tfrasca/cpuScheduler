@@ -244,8 +244,8 @@ void CFS_loop(struct Process *ps, int num_ps) {
 }
 
 int compare_vruntime(const void *a, const void *b) {
-	int vra = (int)a;
-	int vrb = (int)b;
+	int vra = *(int*)a;
+	int vrb = *(int*)b;
    	
    	if (vra > vrb) {
    		return 1;
