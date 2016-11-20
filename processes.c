@@ -13,13 +13,9 @@ int main(int argc, char *argv[]) {
 
 	int num_p = atoi(argv[1]);
 	int array[num_p];
+	int temp, randomIndex;
+	int pid, arrival_time, service_time, priority;
 	int i;
-	int pid;
-	int arrival_time;
-	int service_time;
-	int priority;
-	int temp;
-	int randomIndex;
 	time_t t;
 	FILE *fp;
 

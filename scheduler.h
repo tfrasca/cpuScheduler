@@ -3,9 +3,8 @@
 #include <string.h>
 #include <stdbool.h>
 #include <math.h>
-
-// Taken from http://web.mit.edu/~emin/Desktop/ref_to_emin/www.old/source_code/red_black_tree/index.html
 #include "rb_tree/red_black_tree.h"
+// Taken from http://web.mit.edu/~emin/Desktop/ref_to_emin/www.old/source_code/red_black_tree/index.html
 
 #define TARGET_LATENCY 5
 
@@ -19,26 +18,27 @@ static const int prio_to_weight[40] = {
  /*  10 */       110,        87,        70,        56,        45,
  /*  15 */        36,        29,        23,        18,        15,
 };
+// Taken from https://blog.shichao.io/2015/07/22/relationships_among_nice_priority_and_weight_in_linux_kernel.html
 
-struct Process {
+typedef struct {
 	int pid;
 	int arrival_time;
 	int service_time;
 	int priority;
 
 	int runtime;
-};
+} Process;
 
-//read from file
+// read processes from file
 int get_num_processes(FILE *fp);
-struct Process *get_processes(FILE *fp, int num_ps, char *mode);
-int sort_arrival (const void * a, const void * b);
+void get_processes(FILE *fp, Process *ps, int num_ps);
+int sort_arrival (const void *a, const void *b);
 
 //FCFS loop
-void FCFS_loop(struct Process *ps, int num_ps);
+void FCFS_loop(Process *ps, int num_ps);
 
 //CFS loop
-void CFS_loop(struct Process *ps, int num_ps);
+void CFS_loop(Process *ps, int num_ps);
+Process *get_next_process(rb_red_blk_tree *q);
 int compare_vruntime(const void *a, const void *b);
-void dest_node(void* a);
-struct Process *get_next_process(rb_red_blk_tree *q);
+void blank_func(void* a);
