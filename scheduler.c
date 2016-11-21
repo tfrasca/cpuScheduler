@@ -103,8 +103,12 @@ void get_processes(FILE *fp, Process *ps, int num_ps) {
 int sort_arrival (const void * a, const void * b) {
     int Pa = ((Process*)a)->arrival_time;
     int Pb = ((Process*)b)->arrival_time;
+    int Ppa = ((Process*)a)->priority;
+    int Ppb = ((Process*)b)->priority;
     
     if (Pa < Pb) {
+        return -1;
+    } else if (Pa == Pb && Ppa >= Ppb) {
         return -1;
     } else {
         return 1;
