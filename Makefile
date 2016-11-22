@@ -4,7 +4,7 @@ CFLAGS=-I rb_tree -Wall -g
 OBJS = scheduler.o rb_tree/red_black_tree.o rb_tree/stack.o rb_tree/misc.o
 
 scheduler:  $(OBJS)
-	$(CC) -o scheduler $(OBJS)
+	$(CC) -lm -o scheduler $(OBJS)
 
 rb_tree: 
 	$(MAKE) -C rb_tree/

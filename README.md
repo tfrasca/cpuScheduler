@@ -12,7 +12,7 @@ Process Data Structure:
 
 
 Traditional Algorithm:
-	-We chose the FCFS (First Come First Serve) algorithm for our traditional scheduler, because we believed this would be the easiest to implement. This algorithm only requires you to keep track of arrival time, and each process runs to completion once it starts processing. We also believed that FCFS would be the most obvious baseline to compare the CFS to.
+	-We chose the FCFS (First Come First Serve) algorithm for our traditional scheduler, because we believed this would be the easiest to implement. This algorithm only requires you to keep track of arrival time, and each process runs to completion once it starts processing. The other algorithms require you to compute and keep track of other information additional to arrival time, such as service time, current concurrent runtime, and time remaining (service time - runtime).
 	
 	-Our ready queue is implemented as an array of Processes, and operates similar to the Consumer/Producer problem. One pointer keeps track of the next empty index in the queue, and another keeps track of the next Process to "run". If the second pointer catches up to the first pointer, it waits until another Process arrives and enters the ready queue.
 	
@@ -39,7 +39,7 @@ Linux CFS:
 	-At each timestep, the following things happen:
 		1. If new processes have arrived, they are added to the ready queue, and their weights are added to the sum of weights for all Processes on the ready queue (used to calculate timeslice)
 	
-		2. If no process is currently running, one is taken off the ready queue.
+		2. If no process is currently running, one is taken off the ready queue. (See below for how we pick which one)
 			-If the ready queue is empty, the scheduler prints an idle message and continues to the next timestep.
 			-If there is a process on the ready queue, its timeslice is calculated.
 	
@@ -54,17 +54,17 @@ Linux CFS:
 	-After the loop, we print the total CPU usage percentage, calculated by dividing the CPU usage time by end time, and the average TAT and NTAT, calculated by dividing the sums by the number of processes.
 	
 	-Apart from increments and simple sums, there are two significant calculations in the CFS algorithm:
-		-Timeslice: The actual equation for calculating timeslice is (target latency * process weight) / sum of ready weights. We decided to store timeslice as an integer, and not a float, since the timeslice is used to calculate how many timesteps a process is to run for. However,this means that there are cases when the timeslice is 0 using the above equation, particularly when the target latency is small, the process weight is small, and/or the sum of weights is large. In order to avoid this, we decided to always round up the calculation: ((target latency * process weight) + ready weights - 1) / ready weights.
+		-Timeslice: The equation for calculating timeslice is target latency * (process weight / sum of ready weights). We decided to store timeslice as an integer, and not a float, since the timeslice is used to calculate how many timesteps a process is to run for. However, this means that there are cases when the timeslice is 0 using the above equation, particularly when the target latency is small, the process weight is small, and/or the sum of weights is large. In order to avoid this, we decided to always round up the calculation by casting the calculation to a float, using the ceil() function to round up, and then casting back into an int.
 	
 		-Virtual Runtime: We calculate the virtual runtime as follows: process total runtime * (weight of nice value=0 / process weight). We decided to store the virtual runtime as a float, since otherwise any process with a nice value less than 0 would have a virtual runtime of 0.
 	
-	-Because all processes start with a virtual runtime of zero, our CFS algorithm chooses amongst these processes in the following way:
+	-When taking a process off the ready queue, we choose the process with the smallest virtual runtime. Since our ready queue is a red black tree with virtual runtime as the keys (see below for more details), this meant finding the leftmost node in the red black tree. Because all processes start with a virtual runtime of zero, our CFS algorithm chooses amongst these processes in the following way:
 		1. If multiple processes arrive at different times while the CPU is busy, the process that arrived first gets chosen next
 	
 		2. If multiple processes arrive at the same time while the CPU is busy, the process with the higher priority gets chosen next
 		This ordering is established both by the compare function for the red-black tree, and the compare function that sorts the processes from the input file
 	
-	-Target Latency chosen and why
+	-Target Latency: We chose our target latency to be 5 because we imagined that most input files would have a small number of processes (minimum 5, maximum perhaps 100). Because these processes would all have different arrival and service times, they would not all be in the ready queue at the same time. Since the target latency is meant to represent the time in which all processes on the ready queue run at least once, we believed that assuming there would be about 5 processes in the ready queue would be a fair assumption. Furthermore, since this is a simulation, we assumed that the service times for the processes would be relatively small. By choosing a small target latency, we would have more of a chance of seeing processes swap out of the CPU, so that we could test that our scheduler was working.
 
 
 Test Files:
@@ -76,8 +76,30 @@ Test Files:
 		-the pids are unique
 
 	input1.txt:
+		-There are 13 processes in this file.
+		-The first 5 processes test the edge case of multiple new processes arriving at the same time or close to one another. In CFS, P2-5 arrive while P1 is running. P2 should run before P3-5, since it arrived one timestep earlier than the others. After P2, P5 P3 P4 should run in that order, based on their priorities.
+		-P6-13 are processes that arrive around the same time with a large variety of service time and priorities. We see the processes executing for the first time in the order explained above. We also see that P11 runs frequently in earlier timesteps, because this process has the highest priority. We see P12 running frequently and finishing last, because this process has the lowest priority.
+		-Running this file with the FCFS scheduler produced the following results:
+			CPU usage : 100.00 %
+			Average TAT : 50.77
+			Average normalized TAT : 5.78
+		-Running this file with the CFS scheduler produced the following results:
+			CPU usage : 100.00 %
+			Average TAT : 79.46
+			Average normalized TAT : 12.84
+		-For this dataset, FCFS performs better than CFS. This is because CFS takes priority into account, whereas FCFS does not. Because our highest priority process has a long service time, other shorter processes must wait longer to complete.
 
 	input2.txt:
+		-There are 10 processes in this file.
+		-The file was generated using our processes.c file (see below).
+		-Running this file with FCFS scheduler produced the following results:
+			CPU usage : 99.05 %
+			Average TAT : 34.30
+			Average normalized TAT : 3.99
+		-Running this file with the CFS scheduler produced the following results:
+			CPU usage : 99.05 %
+			Average TAT : 44.30
+			Average normalized TAT : 4.01
 
 	processes.c:
 		-In addition to our two input files, we also wrote a program called processes.c, that generates random processes.

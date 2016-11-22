@@ -1,6 +1,5 @@
 #include "scheduler.h"
 
-
 int main (int argc, char *argv[]) {
     FILE *inputFile;
     int num_processes;
@@ -108,7 +107,9 @@ int sort_arrival (const void * a, const void * b) {
     
     if (Pa < Pb) {
         return -1;
-    } else if (Pa == Pb && Ppa >= Ppb) {
+    } 
+    // sort by priority
+    else if (Pa == Pb && Ppa <= Ppb) {
         return -1;
     } else {
         return 1;
@@ -204,7 +205,7 @@ void CFS_loop(Process *ps, int num_ps) {
             p = get_next_process(ready_queue);
             p_time = 0;
             weight = prio_to_weight[p->priority + 20];
-            timeslice = ((TARGET_LATENCY * weight) + ready_weights - 1) / ready_weights;
+            timeslice = (int)ceil((TARGET_LATENCY * ((float)weight / ready_weights)));
         }
 
         p->runtime++;
